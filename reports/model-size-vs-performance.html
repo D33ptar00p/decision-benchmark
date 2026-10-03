@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Model size vs performance</title><style>
+:root { color-scheme: light; --bg:#fcfcfb; --card:#fff; --ink:#0b0b0b; --muted:#52514e; --line:#e4e2dd; --grid:#ecebe7;
+        --c1:#2a78d6; --c2:#eb6834; --c3:#1baf7a; --band:rgba(120,113,108,.10); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; --bg:#1a1a19; --card:#222220; --ink:#ffffff;
+        --muted:#c3c2b7; --line:#3a3936; --grid:#2e2d2b; --c1:#3987e5; --c2:#d95926; --c3:#199e70; --band:rgba(200,196,185,.08); } }
+:root[data-theme="dark"] { color-scheme: dark; --bg:#1a1a19; --card:#222220; --ink:#ffffff; --muted:#c3c2b7; --line:#3a3936;
+        --grid:#2e2d2b; --c1:#3987e5; --c2:#d95926; --c3:#199e70; --band:rgba(200,196,185,.08); }
+body { margin:0; padding:28px 16px 48px; background:var(--bg); color:var(--ink); font:15px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width:1180px; margin:0 auto; }
+h1 { font-size:24px; margin:0 0 6px; } h2 { font-size:17px; margin:0 0 4px; }
+.sub { color:var(--muted); margin:0 0 20px; max-width:80ch; }
+.takeaways { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 20px; margin-bottom:20px; }
+.takeaways ul { margin:6px 0 0; padding-left:20px; } .takeaways li { margin:4px 0; }
+.grid2 { display:grid; grid-template-columns:repeat(auto-fit, minmax(420px, 1fr)); gap:16px; }
+figure { margin:0; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 14px 10px; }
+figcaption { color:var(--muted); font-size:13px; margin:2px 4px 6px; }
+svg { width:100%; height:auto; display:block; }
+.grid { stroke:var(--grid); stroke-width:1; } .axis { stroke:var(--muted); stroke-width:1; } .tickmark { stroke:var(--muted); }
+.zero { stroke:var(--ink); stroke-width:1.5; stroke-dasharray:5 4; opacity:.55; }
+.tick { fill:var(--muted); font-size:13px; } .axislabel { fill:var(--muted); font-size:13px; }
+.val { fill:var(--ink); font-size:13px; } .note { fill:var(--muted); font-size:12px; } .modelname { fill:var(--ink); font-size:13px; font-weight:600; }
+.lbl { fill:var(--ink); font-size:13px; font-weight:600; } .nodata { fill:var(--band); } .ci { stroke:var(--muted); stroke-width:1.6; } .ring { fill:var(--card); stroke-width:2; } .dot { stroke:var(--card); stroke-width:1.5; }
+.legend { display:flex; flex-wrap:wrap; gap:6px 18px; font-size:13px; color:var(--muted); margin:10px 4px 0; }
+.legend i { display:inline-block; width:11px; height:11px; border-radius:50%; margin-right:6px; vertical-align:-1px; }
+.legend i.hollow { background:var(--card); border:2px solid var(--muted); width:9px; height:9px; }
+details { margin-top:20px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 16px; }
+summary { cursor:pointer; font-weight:600; }
+table { border-collapse:collapse; width:100%; margin-top:10px; font-size:14px; font-variant-numeric:tabular-nums; }
+th, td { text-align:right; padding:6px 10px; border-bottom:1px solid var(--line); } th:first-child, td:first-child, th:nth-child(2), td:nth-child(2) { text-align:left; }
+.caveats { margin-top:20px; color:var(--muted); font-size:14px; } .caveats li { margin:4px 0; }
+</style></head>
+<body><main>
+<h1>Does a bigger decision model help?</h1>
+<p class="sub">Model size against accuracy and speed, from the official JevBench harness (all 2,934 cases, 3 runs per model, AC power, local
+server). Latency is end to end: HTTP round trip plus the model. Only two sizes were benchmarked properly, so this shows what the data
+supports and nothing beyond it.</p>
+
+<section class="takeaways" aria-label="Key findings"><h2>What the data says</h2><ul>
+<li><b>Speed follows size.</b> 4.8x more parameters (421M to ~2B) is 4.2x slower per case (27 to 113 ms).
+ Both Laya checkpoints, which have the same size, run at the same speed.</li>
+<li><b>Accuracy does not simply follow size.</b> The larger model gains +3.3 points overall (63.3% to 66.7%), but unevenly:
+ choice +18.4, yes/no -0.1, score -13.8 points. It is more accurate on only 9 of 22 datasets.</li>
+<li><b>Training matters more than size here.</b> At the same size (421M) the two Laya checkpoints differ by 17.5 points overall
+ (45.8% against 63.3%), more than the 3.3-point gap that 4.8x more parameters buys.</li>
+</ul></section>
+
+<div class="grid2">
+<figure><svg viewBox="0 0 640 400" role="img" aria-labelledby="t-acc d-acc">
+<title id="t-acc">Accuracy against model size</title><desc id="d-acc">From the 421M Laya model to the roughly 2B Strands Decider, overall accuracy goes from 63.3% to 66.7%, with different directions for each question type.</desc>
+<rect class="nodata" x="320.6" y="20" width="191.4" height="310"/>
+<text class="note" x="416" y="36" text-anchor="middle">not measured at scale</text>
+<text class="note" x="416" y="51" text-anchor="middle">(TEV 4B: 40-case check below)</text>
+<line class="grid" x1="62" x2="512" y1="330.0" y2="330.0"/>
+<text class="tick" x="54" y="334.0" text-anchor="end">30%</text>
+<line class="grid" x1="62" x2="512" y1="278.3" y2="278.3"/>
+<text class="tick" x="54" y="282.3" text-anchor="end">40%</text>
+<line class="grid" x1="62" x2="512" y1="226.7" y2="226.7"/>
+<text class="tick" x="54" y="230.7" text-anchor="end">50%</text>
+<line class="grid" x1="62" x2="512" y1="175.0" y2="175.0"/>
+<text class="tick" x="54" y="179.0" text-anchor="end">60%</text>
+<line class="grid" x1="62" x2="512" y1="123.3" y2="123.3"/>
+<text class="tick" x="54" y="127.3" text-anchor="end">70%</text>
+<line class="grid" x1="62" x2="512" y1="71.7" y2="71.7"/>
+<text class="tick" x="54" y="75.7" text-anchor="end">80%</text>
+<line class="grid" x1="62" x2="512" y1="20.0" y2="20.0"/>
+<text class="tick" x="54" y="24.0" text-anchor="end">90%</text>
+<line class="tickmark" x1="124.3" x2="124.3" y1="330" y2="335"/>
+<text class="tick" x="124.3" y="349" text-anchor="middle">0.5B</text>
+<line class="tickmark" x1="208.9" x2="208.9" y1="330" y2="335"/>
+<text class="tick" x="208.9" y="349" text-anchor="middle">1B</text>
+<line class="tickmark" x1="293.4" x2="293.4" y1="330" y2="335"/>
+<text class="tick" x="293.4" y="349" text-anchor="middle">2B</text>
+<line class="tickmark" x1="378.0" x2="378.0" y1="330" y2="335"/>
+<text class="tick" x="378.0" y="349" text-anchor="middle">4B</text>
+<line class="tickmark" x1="462.5" x2="462.5" y1="330" y2="335"/>
+<text class="tick" x="462.5" y="349" text-anchor="middle">8B</text>
+<line class="axis" x1="62" x2="512" y1="330" y2="330"/>
+<text class="axislabel" x="287" y="392" text-anchor="middle">model size (billions of parameters, log scale)</text>
+<text class="axislabel" transform="translate(14 175) rotate(-90)" text-anchor="middle">accuracy (% correct)</text>
+<text class="modelname" x="103.3" y="370" text-anchor="middle">Laya (421M)</text>
+<text class="modelname" x="293.4" y="370" text-anchor="middle">Strands Decider (~2B)</text>
+<g class="series">
+<line x1="103.3" y1="157.8" x2="293.4" y2="140.6" stroke="var(--ink)" stroke-width="3.2"/>
+<circle class="ring" cx="103.3" cy="248.3" r="6" stroke="var(--ink)"><title>overall: Laya English 45.8%</title></circle>
+<circle cx="103.3" cy="157.8" r="5.5" fill="var(--ink)"><title>overall: Laya typed-decisions 63.3%</title></circle>
+<circle cx="293.4" cy="140.6" r="5.5" fill="var(--ink)"><title>overall: Strands Decider 66.7%</title></circle>
+<text class="val" x="92.3" y="168.7" text-anchor="end">63.3%</text>
+<text class="val" x="304.4" y="149.6">overall 66.7%</text>
+</g>
+<g class="series">
+<line x1="103.3" y1="181.8" x2="293.4" y2="86.7" stroke="var(--c1)" stroke-width="2.2"/>
+<circle class="ring" cx="103.3" cy="264.0" r="6" stroke="var(--c1)"><title>choice: Laya English 42.8%</title></circle>
+<circle cx="103.3" cy="181.8" r="5.5" fill="var(--c1)"><title>choice: Laya typed-decisions 58.7%</title></circle>
+<circle cx="293.4" cy="86.7" r="5.5" fill="var(--c1)"><title>choice: Strands Decider 77.1%</title></circle>
+<text class="val" x="92.3" y="183.5" text-anchor="end">58.7%</text>
+<text class="val" x="304.4" y="89.0">choice 77.1%</text>
+</g>
+<g class="series">
+<line x1="103.3" y1="132.8" x2="293.4" y2="133.3" stroke="var(--c2)" stroke-width="2.2"/>
+<circle class="ring" cx="103.3" cy="190.5" r="6" stroke="var(--c2)"><title>yes/no: Laya English 57.0%</title></circle>
+<circle cx="103.3" cy="132.8" r="5.5" fill="var(--c2)"><title>yes/no: Laya typed-decisions 68.2%</title></circle>
+<circle cx="293.4" cy="133.3" r="5.5" fill="var(--c2)"><title>yes/no: Strands Decider 68.1%</title></circle>
+<text class="val" x="92.3" y="134.4" text-anchor="end">68.2%</text>
+<text class="val" x="304.4" y="135.6">yes/no 68.1%</text>
+</g>
+<g class="series">
+<line x1="103.3" y1="153.0" x2="293.4" y2="224.2" stroke="var(--c3)" stroke-width="2.2"/>
+<circle class="ring" cx="103.3" cy="292.8" r="6" stroke="var(--c3)"><title>score: Laya English 37.2%</title></circle>
+<circle cx="103.3" cy="153.0" r="5.5" fill="var(--c3)"><title>score: Laya typed-decisions 64.3%</title></circle>
+<circle cx="293.4" cy="224.2" r="5.5" fill="var(--c3)"><title>score: Strands Decider 50.5%</title></circle>
+<text class="val" x="92.3" y="154.7" text-anchor="end">64.3%</text>
+<text class="val" x="304.4" y="226.5">score 50.5%</text>
+</g>
+</svg><figcaption><b>A. Accuracy against size.</b> Each line is one question type, from the best small model to the larger model.
+Hollow rings: Laya English (same 421M size, different training).</figcaption></figure>
+<figure><svg viewBox="0 0 640 400" role="img" aria-labelledby="t-lat d-lat">
+<title id="t-lat">Time per case against model size</title><desc id="d-lat">From 421M to about 2B parameters, time per case goes from 27 ms to 113 ms.</desc>
+<rect class="nodata" x="320.6" y="20" width="191.4" height="310"/>
+<text class="note" x="416" y="36" text-anchor="middle">not measured at scale</text>
+<text class="note" x="416" y="51" text-anchor="middle">(TEV 4B: 40-case check below)</text>
+<line class="grid" x1="62" x2="512" y1="330.0" y2="330.0"/>
+<text class="tick" x="54" y="334.0" text-anchor="end">0</text>
+<line class="grid" x1="62" x2="512" y1="252.5" y2="252.5"/>
+<text class="tick" x="54" y="256.5" text-anchor="end">40</text>
+<line class="grid" x1="62" x2="512" y1="175.0" y2="175.0"/>
+<text class="tick" x="54" y="179.0" text-anchor="end">80</text>
+<line class="grid" x1="62" x2="512" y1="97.5" y2="97.5"/>
+<text class="tick" x="54" y="101.5" text-anchor="end">120</text>
+<line class="grid" x1="62" x2="512" y1="20.0" y2="20.0"/>
+<text class="tick" x="54" y="24.0" text-anchor="end">160</text>
+<line class="tickmark" x1="124.3" x2="124.3" y1="330" y2="335"/>
+<text class="tick" x="124.3" y="349" text-anchor="middle">0.5B</text>
+<line class="tickmark" x1="208.9" x2="208.9" y1="330" y2="335"/>
+<text class="tick" x="208.9" y="349" text-anchor="middle">1B</text>
+<line class="tickmark" x1="293.4" x2="293.4" y1="330" y2="335"/>
+<text class="tick" x="293.4" y="349" text-anchor="middle">2B</text>
+<line class="tickmark" x1="378.0" x2="378.0" y1="330" y2="335"/>
+<text class="tick" x="378.0" y="349" text-anchor="middle">4B</text>
+<line class="tickmark" x1="462.5" x2="462.5" y1="330" y2="335"/>
+<text class="tick" x="462.5" y="349" text-anchor="middle">8B</text>
+<line class="axis" x1="62" x2="512" y1="330" y2="330"/>
+<text class="axislabel" x="287" y="392" text-anchor="middle">model size (billions of parameters, log scale)</text>
+<text class="axislabel" transform="translate(14 175) rotate(-90)" text-anchor="middle">time per case (ms, end to end)</text>
+<text class="modelname" x="103.3" y="370" text-anchor="middle">Laya (421M)</text>
+<text class="modelname" x="293.4" y="370" text-anchor="middle">Strands Decider (~2B)</text>
+<g class="series">
+<line x1="103.3" y1="278.1" x2="293.4" y2="110.2" stroke="var(--ink)" stroke-width="3.2"/>
+<circle class="ring" cx="103.3" cy="278.1" r="6" stroke="var(--ink)"><title>overall: Laya English 27 ms</title></circle>
+<circle cx="103.3" cy="278.1" r="5.5" fill="var(--ink)"><title>overall: Laya typed-decisions 27 ms</title></circle>
+<circle cx="293.4" cy="110.2" r="5.5" fill="var(--ink)"><title>overall: Strands Decider 113 ms</title></circle>
+<text class="val" x="92.3" y="274.9" text-anchor="end">27 ms</text>
+<text class="val" x="304.4" y="111.7">overall 113 ms</text>
+</g>
+<g class="series">
+<line x1="103.3" y1="278.3" x2="293.4" y2="67.5" stroke="var(--c1)" stroke-width="2.2"/>
+<circle class="ring" cx="103.3" cy="278.1" r="6" stroke="var(--c1)"><title>choice: Laya English 27 ms</title></circle>
+<circle cx="103.3" cy="278.3" r="5.5" fill="var(--c1)"><title>choice: Laya typed-decisions 27 ms</title></circle>
+<circle cx="293.4" cy="67.5" r="5.5" fill="var(--c1)"><title>choice: Strands Decider 135 ms</title></circle>
+<text class="val" x="92.3" y="288.9" text-anchor="end">27 ms</text>
+<text class="val" x="304.4" y="69.1">choice 135 ms</text>
+</g>
+<g class="series">
+<line x1="103.3" y1="282.6" x2="293.4" y2="158.6" stroke="var(--c2)" stroke-width="2.2"/>
+<circle class="ring" cx="103.3" cy="282.5" r="6" stroke="var(--c2)"><title>yes/no: Laya English 25 ms</title></circle>
+<circle cx="103.3" cy="282.6" r="5.5" fill="var(--c2)"><title>yes/no: Laya typed-decisions 24 ms</title></circle>
+<circle cx="293.4" cy="158.6" r="5.5" fill="var(--c2)"><title>yes/no: Strands Decider 88 ms</title></circle>
+<text class="val" x="92.3" y="302.9" text-anchor="end">24 ms</text>
+<text class="val" x="304.4" y="160.1">yes/no 88 ms</text>
+</g>
+<g class="series">
+<line x1="103.3" y1="272.7" x2="293.4" y2="114.3" stroke="var(--c3)" stroke-width="2.2"/>
+<circle class="ring" cx="103.3" cy="273.0" r="6" stroke="var(--c3)"><title>score: Laya English 29 ms</title></circle>
+<circle cx="103.3" cy="272.7" r="5.5" fill="var(--c3)"><title>score: Laya typed-decisions 30 ms</title></circle>
+<circle cx="293.4" cy="114.3" r="5.5" fill="var(--c3)"><title>score: Strands Decider 111 ms</title></circle>
+<text class="val" x="92.3" y="260.9" text-anchor="end">30 ms</text>
+<text class="val" x="304.4" y="125.7">score 111 ms</text>
+</g>
+</svg><figcaption><b>B. Time per case against size.</b> Same layout. The rings sit on the dots: same size, same speed.</figcaption></figure>
+</div>
+
+<figure style="margin-top:16px"><svg viewBox="0 0 760 460" role="img" aria-labelledby="t-c d-c">
+<title id="t-c">Extra accuracy against extra time, per dataset</title><desc id="d-c">Each dot is one JevBench dataset. Horizontal: how many times slower Strands Decider is than Laya typed-decisions. Vertical: how many accuracy points Strands gains (above the line) or loses (below it).</desc>
+<line class="grid" x1="62" x2="736" y1="384.8" y2="384.8"/>
+<text class="tick" x="54" y="388.8" text-anchor="end">-40</text>
+<line class="grid" x1="62" x2="736" y1="324.0" y2="324.0"/>
+<text class="tick" x="54" y="328.0" text-anchor="end">-20</text>
+<line class="grid" x1="62" x2="736" y1="263.2" y2="263.2"/>
+<text class="tick" x="54" y="267.2" text-anchor="end">0</text>
+<line class="grid" x1="62" x2="736" y1="202.4" y2="202.4"/>
+<text class="tick" x="54" y="206.4" text-anchor="end">+20</text>
+<line class="grid" x1="62" x2="736" y1="141.6" y2="141.6"/>
+<text class="tick" x="54" y="145.6" text-anchor="end">+40</text>
+<line class="grid" x1="62" x2="736" y1="80.8" y2="80.8"/>
+<text class="tick" x="54" y="84.8" text-anchor="end">+60</text>
+<line class="grid" x1="62" x2="736" y1="20.0" y2="20.0"/>
+<text class="tick" x="54" y="24.0" text-anchor="end">+80</text>
+<line class="tickmark" x1="62.0" x2="62.0" y1="400" y2="405"/>
+<text class="tick" x="62.0" y="419" text-anchor="middle">2x</text>
+<line class="tickmark" x1="231.8" x2="231.8" y1="400" y2="405"/>
+<text class="tick" x="231.8" y="419" text-anchor="middle">3x</text>
+<line class="tickmark" x1="352.3" x2="352.3" y1="400" y2="405"/>
+<text class="tick" x="352.3" y="419" text-anchor="middle">4x</text>
+<line class="tickmark" x1="522.1" x2="522.1" y1="400" y2="405"/>
+<text class="tick" x="522.1" y="419" text-anchor="middle">6x</text>
+<line class="tickmark" x1="642.6" x2="642.6" y1="400" y2="405"/>
+<text class="tick" x="642.6" y="419" text-anchor="middle">8x</text>
+<line class="tickmark" x1="736.0" x2="736.0" y1="400" y2="405"/>
+<text class="tick" x="736.0" y="419" text-anchor="middle">10x</text>
+<line class="axis" x1="62" x2="736" y1="400" y2="400"/>
+<text class="axislabel" x="399" y="452" text-anchor="middle">how many times slower Strands Decider is (log scale)</text>
+<text class="axislabel" transform="translate(14 210) rotate(-90)" text-anchor="middle">accuracy gain of Strands over Laya typed (points)</text>
+<line class="zero" x1="62" x2="736" y1="263.2" y2="263.2"/>
+<text class="note" x="68" y="34">above the line: Strands is more accurate</text>
+<text class="note" x="68" y="392">below the line: Laya typed-decisions is more accurate</text>
+<circle cx="239.2" cy="271.0" r="5.5" fill="var(--c1)" class="dot"><title>agent_trace_observability (choice, 156 cases): Strands 59.0% at 73 ms, Laya typed 61.5% at 24 ms</title></circle>
+<circle cx="217.5" cy="217.6" r="5.5" fill="var(--c2)" class="dot"><title>agent_trace_observability (yes/no, 60 cases): Strands 56.7% at 66 ms, Laya typed 41.7% at 23 ms</title></circle>
+<circle cx="264.1" cy="344.6" r="5.5" fill="var(--c3)" class="dot"><title>agent_trace_observability (score, 168 cases): Strands 42.9% at 79 ms, Laya typed 69.6% at 24 ms</title></circle>
+<text class="val" x="274.1" y="348.6" text-anchor="start">agent trace observability (score) -27</text>
+<circle cx="652.3" cy="107.1" r="5.5" fill="var(--c1)" class="dot"><title>banking (choice, 300 cases): Strands 88.7% at 288 ms, Laya typed 37.3% at 35 ms</title></circle>
+<text class="val" x="642.3" y="111.1" text-anchor="end">banking (choice) +51</text>
+<circle cx="288.2" cy="59.5" r="5.5" fill="var(--c1)" class="dot"><title>commerce (choice, 100 cases): Strands 93.0% at 55 ms, Laya typed 26.0% at 16 ms</title></circle>
+<text class="val" x="298.2" y="63.5" text-anchor="start">commerce (choice) +67</text>
+<circle cx="322.6" cy="309.8" r="5.5" fill="var(--c1)" class="dot"><title>customer_service (choice, 137 cases): Strands 74.5% at 130 ms, Laya typed 89.8% at 35 ms</title></circle>
+<circle cx="329.8" cy="196.7" r="5.5" fill="var(--c2)" class="dot"><title>customer_service (yes/no, 96 cases): Strands 77.1% at 121 ms, Laya typed 55.2% at 32 ms</title></circle>
+<text class="val" x="339.8" y="200.7" text-anchor="start">customer service (yes/no) +22</text>
+<circle cx="331.3" cy="281.4" r="5.5" fill="var(--c3)" class="dot"><title>customer_service (score, 184 cases): Strands 60.9% at 129 ms, Laya typed 66.8% at 34 ms</title></circle>
+<circle cx="375.5" cy="361.4" r="5.5" fill="var(--c1)" class="dot"><title>invoice_processing (choice, 65 cases): Strands 63.1% at 143 ms, Laya typed 95.4% at 34 ms</title></circle>
+<text class="val" x="385.5" y="365.4" text-anchor="start">invoice processing (choice) -32</text>
+<circle cx="360.8" cy="308.8" r="5.5" fill="var(--c2)" class="dot"><title>invoice_processing (yes/no, 200 cases): Strands 80.5% at 134 ms, Laya typed 95.5% at 33 ms</title></circle>
+<circle cx="393.1" cy="302.9" r="5.5" fill="var(--c3)" class="dot"><title>invoice_processing (score, 184 cases): Strands 48.4% at 148 ms, Laya typed 61.4% at 34 ms</title></circle>
+<circle cx="241.7" cy="260.2" r="5.5" fill="var(--c2)" class="dot"><title>invoices (yes/no, 100 cases): Strands 52.0% at 54 ms, Laya typed 51.0% at 17 ms</title></circle>
+<circle cx="242.6" cy="330.1" r="5.5" fill="var(--c2)" class="dot"><title>logic (yes/no, 100 cases): Strands 37.0% at 50 ms, Laya typed 59.0% at 16 ms</title></circle>
+<text class="val" x="252.6" y="334.1" text-anchor="start">logic (yes/no) -22</text>
+<circle cx="248.5" cy="272.3" r="5.5" fill="var(--c3)" class="dot"><title>moderation (score, 100 cases): Strands 43.0% at 50 ms, Laya typed 46.0% at 16 ms</title></circle>
+<circle cx="248.7" cy="263.2" r="5.5" fill="var(--c2)" class="dot"><title>observability (yes/no, 100 cases): Strands 100.0% at 49 ms, Laya typed 100.0% at 16 ms</title></circle>
+<circle cx="293.3" cy="172.0" r="5.5" fill="var(--c1)" class="dot"><title>org (choice, 100 cases): Strands 54.0% at 55 ms, Laya typed 24.0% at 16 ms</title></circle>
+<text class="val" x="303.3" y="176.0" text-anchor="start">org (choice) +30</text>
+<circle cx="254.2" cy="251.0" r="5.5" fill="var(--c2)" class="dot"><title>quant (yes/no, 100 cases): Strands 69.0% at 50 ms, Laya typed 65.0% at 16 ms</title></circle>
+<circle cx="236.8" cy="263.2" r="5.5" fill="var(--c1)" class="dot"><title>reviews (choice, 100 cases): Strands 60.0% at 48 ms, Laya typed 60.0% at 16 ms</title></circle>
+<circle cx="289.3" cy="238.6" r="5.5" fill="var(--c1)" class="dot"><title>security_incidents (choice, 99 cases): Strands 84.8% at 113 ms, Laya typed 76.8% at 33 ms</title></circle>
+<circle cx="325.5" cy="238.0" r="5.5" fill="var(--c2)" class="dot"><title>security_incidents (yes/no, 193 cases): Strands 61.7% at 111 ms, Laya typed 53.4% at 29 ms</title></circle>
+<circle cx="306.4" cy="312.3" r="5.5" fill="var(--c3)" class="dot"><title>security_incidents (score, 192 cases): Strands 53.1% at 119 ms, Laya typed 69.3% at 33 ms</title></circle>
+<text class="val" x="316.4" y="316.3" text-anchor="start">security incidents (score) -16</text>
+<circle cx="236.6" cy="263.2" r="5.5" fill="var(--c1)" class="dot"><title>support (choice, 100 cases): Strands 100.0% at 49 ms, Laya typed 100.0% at 16 ms</title></circle>
+</svg><figcaption><b>C. What the extra size buys, per dataset.</b> Each dot is one of JevBench's 22 datasets (Strands Decider ~2B compared
+with Laya typed-decisions 421M). Right = a bigger slowdown; up = a bigger accuracy gain. Hover a dot for the numbers.</figcaption>
+<div class="legend"><span><i style="background:var(--c1)"></i>choice</span><span><i style="background:var(--c2)"></i>yes/no</span>
+<span><i style="background:var(--c3)"></i>score</span></div></figure>
+
+<h2 style="margin-top:28px">Preliminary: four sizes on the same 40 cases</h2>
+<p class="sub">TEV1 0.8B and 4B were only checked on 40 cases (the first 10 of banking77, decision-bench, jevbench-noul and jevbench-score), so this section is a
+rough look, not a result. Intervals show how wide the uncertainty is. Nimble 9B was left out; a full 3-run test of the TEV models was started and
+stopped before it finished.</p>
+<div class="grid2">
+<figure><svg viewBox="0 0 640 400" role="img" aria-labelledby="t-accp d-accp">
+<title id="t-accp">Accuracy against size, four sizes, 40 cases</title><desc id="d-accp">Preliminary: five models on the same 40 cases, with 95% intervals that are wide because there are only 40 cases.</desc>
+<line class="grid" x1="62" x2="616" y1="330.0" y2="330.0"/>
+<text class="tick" x="54" y="334.0" text-anchor="end">0%</text>
+<line class="grid" x1="62" x2="616" y1="268.0" y2="268.0"/>
+<text class="tick" x="54" y="272.0" text-anchor="end">20%</text>
+<line class="grid" x1="62" x2="616" y1="206.0" y2="206.0"/>
+<text class="tick" x="54" y="210.0" text-anchor="end">40%</text>
+<line class="grid" x1="62" x2="616" y1="144.0" y2="144.0"/>
+<text class="tick" x="54" y="148.0" text-anchor="end">60%</text>
+<line class="grid" x1="62" x2="616" y1="82.0" y2="82.0"/>
+<text class="tick" x="54" y="86.0" text-anchor="end">80%</text>
+<line class="grid" x1="62" x2="616" y1="20.0" y2="20.0"/>
+<text class="tick" x="54" y="24.0" text-anchor="end">100%</text>
+<line class="tickmark" x1="211.2" x2="211.2" y1="330" y2="335"/>
+<text class="tick" x="211.2" y="349" text-anchor="middle">0.5B</text>
+<line class="tickmark" x1="324.2" x2="324.2" y1="330" y2="335"/>
+<text class="tick" x="324.2" y="349" text-anchor="middle">1B</text>
+<line class="tickmark" x1="437.1" x2="437.1" y1="330" y2="335"/>
+<text class="tick" x="437.1" y="349" text-anchor="middle">2B</text>
+<line class="tickmark" x1="550.0" x2="550.0" y1="330" y2="335"/>
+<text class="tick" x="550.0" y="349" text-anchor="middle">4B</text>
+<line class="axis" x1="62" x2="616" y1="330" y2="330"/>
+<text class="axislabel" x="339" y="392" text-anchor="middle">model size (billions of parameters, log scale)</text>
+<text class="axislabel" transform="translate(14 175) rotate(-90)" text-anchor="middle">accuracy on the same 40 cases (% correct)</text>
+<line class="ci" x1="172.2" x2="172.2" y1="191.8" y2="101.7"/>
+<line class="ci" x1="167.2" x2="177.2" y1="191.8" y2="191.8"/>
+<line class="ci" x1="167.2" x2="177.2" y1="101.7" y2="101.7"/>
+<circle class="ring" cx="172.2" cy="144.0" r="6" stroke="var(--ink)"><title>Laya English: 24/40 correct (60.0%, 95% interval 45-74%), 27 ms per case</title></circle>
+<text class="lbl" x="172.2" y="208.8" text-anchor="middle">Laya English</text>
+<text class="val" x="172.2" y="222.8" text-anchor="middle">60%  (45-74)</text>
+<line class="ci" x1="194.2" x2="194.2" y1="168.7" y2="82.3"/>
+<line class="ci" x1="189.2" x2="199.2" y1="168.7" y2="168.7"/>
+<line class="ci" x1="189.2" x2="199.2" y1="82.3" y2="82.3"/>
+<circle cx="194.2" cy="120.7" r="6" fill="var(--ink)"><title>Laya typed-decisions: 27/40 correct (67.5%, 95% interval 52-80%), 29 ms per case</title></circle>
+<text class="lbl" x="194.2" y="60.3" text-anchor="middle">Laya typed</text>
+<text class="val" x="194.2" y="74.3" text-anchor="middle">68%  (52-80)</text>
+<line class="ci" x1="287.8" x2="287.8" y1="176.5" y2="88.6"/>
+<line class="ci" x1="282.8" x2="292.8" y1="176.5" y2="176.5"/>
+<line class="ci" x1="282.8" x2="292.8" y1="88.6" y2="88.6"/>
+<polygon points="287.8,121.5 294.3,133.5 281.3,133.5" fill="var(--ink)"><title>TEV1 0.8B: 26/40 correct (65.0%, 95% interval 50-78%), 96 ms per case</title></polygon>
+<text class="lbl" x="287.8" y="66.6" text-anchor="middle">TEV1 0.8B</text>
+<text class="val" x="287.8" y="80.6" text-anchor="middle">65%  (50-78)</text>
+<line class="ci" x1="437.1" x2="437.1" y1="160.8" y2="76.0"/>
+<line class="ci" x1="432.1" x2="442.1" y1="160.8" y2="160.8"/>
+<line class="ci" x1="432.1" x2="442.1" y1="76.0" y2="76.0"/>
+<rect x="431.6" y="107.5" width="11" height="11" fill="var(--ink)"><title>Strands Decider 2B: 28/40 correct (70.0%, 95% interval 55-82%), 137 ms per case</title></rect>
+<text class="lbl" x="437.1" y="54.0" text-anchor="middle">Strands 2B</text>
+<text class="val" x="437.1" y="68.0" text-anchor="middle">70%  (55-82)</text>
+<line class="ci" x1="557.9" x2="557.9" y1="119.0" y2="47.1"/>
+<line class="ci" x1="552.9" x2="562.9" y1="119.0" y2="119.0"/>
+<line class="ci" x1="552.9" x2="562.9" y1="47.1" y2="47.1"/>
+<polygon points="557.9,67.3 564.4,79.3 551.4,79.3" fill="var(--ink)"><title>TEV1 4B: 33/40 correct (82.5%, 95% interval 68-91%), 279 ms per case</title></polygon>
+<text class="lbl" x="557.9" y="25.1" text-anchor="middle">TEV1 4B</text>
+<text class="val" x="557.9" y="39.1" text-anchor="middle">82%  (68-91)</text>
+</svg><figcaption><b>D. Accuracy against size.</b> Bars are 95% intervals. Shapes: circle = Laya (hollow = English), square = Strands Decider, triangle = TEV.</figcaption></figure>
+<figure><svg viewBox="0 0 640 400" role="img" aria-labelledby="t-latp d-latp">
+<title id="t-latp">Time per case against size, four sizes, 40 cases</title><desc id="d-latp">Preliminary: time per case for the same five models.</desc>
+<line class="grid" x1="62" x2="616" y1="330.0" y2="330.0"/>
+<text class="tick" x="54" y="334.0" text-anchor="end">0</text>
+<line class="grid" x1="62" x2="616" y1="268.0" y2="268.0"/>
+<text class="tick" x="54" y="272.0" text-anchor="end">100</text>
+<line class="grid" x1="62" x2="616" y1="206.0" y2="206.0"/>
+<text class="tick" x="54" y="210.0" text-anchor="end">200</text>
+<line class="grid" x1="62" x2="616" y1="144.0" y2="144.0"/>
+<text class="tick" x="54" y="148.0" text-anchor="end">300</text>
+<line class="grid" x1="62" x2="616" y1="82.0" y2="82.0"/>
+<text class="tick" x="54" y="86.0" text-anchor="end">400</text>
+<line class="grid" x1="62" x2="616" y1="20.0" y2="20.0"/>
+<text class="tick" x="54" y="24.0" text-anchor="end">500</text>
+<line class="tickmark" x1="211.2" x2="211.2" y1="330" y2="335"/>
+<text class="tick" x="211.2" y="349" text-anchor="middle">0.5B</text>
+<line class="tickmark" x1="324.2" x2="324.2" y1="330" y2="335"/>
+<text class="tick" x="324.2" y="349" text-anchor="middle">1B</text>
+<line class="tickmark" x1="437.1" x2="437.1" y1="330" y2="335"/>
+<text class="tick" x="437.1" y="349" text-anchor="middle">2B</text>
+<line class="tickmark" x1="550.0" x2="550.0" y1="330" y2="335"/>
+<text class="tick" x="550.0" y="349" text-anchor="middle">4B</text>
+<line class="axis" x1="62" x2="616" y1="330" y2="330"/>
+<text class="axislabel" x="339" y="392" text-anchor="middle">model size (billions of parameters, log scale)</text>
+<text class="axislabel" transform="translate(14 175) rotate(-90)" text-anchor="middle">time per case (ms)</text>
+<circle class="ring" cx="172.2" cy="313.5" r="6" stroke="var(--ink)"><title>Laya English: 24/40 correct (60.0%, 95% interval 45-74%), 27 ms per case</title></circle>
+<text class="lbl" x="163.2" y="291.5" text-anchor="end">Laya English</text>
+<text class="val" x="163.2" y="305.5" text-anchor="end">27 ms</text>
+<circle cx="194.2" cy="312.1" r="6" fill="var(--ink)"><title>Laya typed-decisions: 27/40 correct (67.5%, 95% interval 52-80%), 29 ms per case</title></circle>
+<text class="lbl" x="203.2" y="290.1" text-anchor="start">Laya typed</text>
+<text class="val" x="203.2" y="304.1" text-anchor="start">29 ms</text>
+<polygon points="287.8,263.2 294.3,275.2 281.3,275.2" fill="var(--ink)"><title>TEV1 0.8B: 26/40 correct (65.0%, 95% interval 50-78%), 96 ms per case</title></polygon>
+<text class="lbl" x="287.8" y="248.2" text-anchor="middle">TEV1 0.8B</text>
+<text class="val" x="287.8" y="262.2" text-anchor="middle">96 ms</text>
+<rect x="431.6" y="239.5" width="11" height="11" fill="var(--ink)"><title>Strands Decider 2B: 28/40 correct (70.0%, 95% interval 55-82%), 137 ms per case</title></rect>
+<text class="lbl" x="437.1" y="223.0" text-anchor="middle">Strands 2B</text>
+<text class="val" x="437.1" y="237.0" text-anchor="middle">137 ms</text>
+<polygon points="557.9,150.1 564.4,162.1 551.4,162.1" fill="var(--ink)"><title>TEV1 4B: 33/40 correct (82.5%, 95% interval 68-91%), 279 ms per case</title></polygon>
+<text class="lbl" x="557.9" y="135.1" text-anchor="middle">TEV1 4B</text>
+<text class="val" x="557.9" y="149.1" text-anchor="middle">279 ms</text>
+</svg><figcaption><b>E. Time per case against size.</b> Strands and Laya: fastest of their five earlier runs (best case, because the laptop was
+partly on battery). TEV: one run on AC power with a cool GPU. All include the HTTP round trip.</figcaption></figure>
+</div>
+<details><summary>Preliminary data table</summary>
+<table><thead><tr><th>Model</th><th>Size</th><th>Correct</th><th>Accuracy</th><th>95% interval</th><th>Time per case</th><th>Errors</th><th>Runs</th></tr></thead>
+<tbody><tr><td>Laya English</td><td>421M</td><td>24/40</td><td>60.0%</td><td>45-74%</td><td>27 ms</td><td>0</td><td>5</td></tr><tr><td>Laya typed-decisions</td><td>421M</td><td>27/40</td><td>67.5%</td><td>52-80%</td><td>29 ms</td><td>0</td><td>5</td></tr><tr><td>TEV1 0.8B</td><td>800M</td><td>26/40</td><td>65.0%</td><td>50-78%</td><td>96 ms</td><td>1</td><td>1</td></tr><tr><td>Strands Decider 2B</td><td>~2B</td><td>28/40</td><td>70.0%</td><td>55-82%</td><td>137 ms</td><td>0</td><td>5</td></tr><tr><td>TEV1 4B</td><td>~4.2B</td><td>33/40</td><td>82.5%</td><td>68-91%</td><td>279 ms</td><td>1</td><td>1</td></tr></tbody></table>
+<p class="sub" style="margin-top:8px">Errors: cases the model refused. Both TEV models reject inputs over 2,050 tokens (one Decision Bench case here).</p></details>
+
+<details open><summary>Data table</summary>
+<table><thead><tr><th>Model</th><th>Question type</th><th>Size</th><th>Accuracy</th><th>Time per case</th><th>Cases</th></tr></thead>
+<tbody><tr><td>Laya English</td><td>overall</td><td>421M</td><td>45.8%</td><td>27 ms</td><td>2,934</td></tr><tr><td>Laya English</td><td>choice</td><td>421M</td><td>42.8%</td><td>27 ms</td><td>1,157</td></tr><tr><td>Laya English</td><td>yes/no</td><td>421M</td><td>57.0%</td><td>25 ms</td><td>949</td></tr><tr><td>Laya English</td><td>score</td><td>421M</td><td>37.2%</td><td>29 ms</td><td>828</td></tr><tr><td>Laya typed-decisions</td><td>overall</td><td>421M</td><td>63.3%</td><td>27 ms</td><td>2,934</td></tr><tr><td>Laya typed-decisions</td><td>choice</td><td>421M</td><td>58.7%</td><td>27 ms</td><td>1,157</td></tr><tr><td>Laya typed-decisions</td><td>yes/no</td><td>421M</td><td>68.2%</td><td>24 ms</td><td>949</td></tr><tr><td>Laya typed-decisions</td><td>score</td><td>421M</td><td>64.3%</td><td>30 ms</td><td>828</td></tr><tr><td>Strands Decider 2B</td><td>overall</td><td>~2B</td><td>66.7%</td><td>113 ms</td><td>2,934</td></tr><tr><td>Strands Decider 2B</td><td>choice</td><td>~2B</td><td>77.1%</td><td>135 ms</td><td>1,157</td></tr><tr><td>Strands Decider 2B</td><td>yes/no</td><td>~2B</td><td>68.1%</td><td>88 ms</td><td>949</td></tr><tr><td>Strands Decider 2B</td><td>score</td><td>~2B</td><td>50.5%</td><td>111 ms</td><td>828</td></tr></tbody></table></details>
+
+<ul class="caveats"><li><b>Only two sizes benchmarked properly.</b> Laya (421M) and Strands Decider (~2B) have full results (charts A to C). TEV 0.8B and 4B have only the 40-case check (D and E), and Nimble 9B was left out.</li>
+<li><b>Size is confounded.</b> The two models also differ in design (a small encoder against a language-model decoder), training data and how they read inputs, so the gaps are not only about parameter count.</li>
+<li><b>Latency is end to end</b> through a local HTTP server and was measured on a laptop GPU that throttles with heat (runs of the larger model drifted from 316 to 344 s), so treat speeds as approximate.</li>
+<li>Parameter counts are nominal, taken from the model names.</li></ul>
+</main></body></html>

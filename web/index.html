@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Decision Benchmark</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<main>
+  <h1>Decision Benchmark</h1>
+  <nav><a class="here" href="/">Compare models</a><a href="/datasets">Compare datasets</a></nav>
+  <div class="bar">
+    <label>Dataset <select id="dataset"></select></label>
+    <label>Cases <input id="limit" type="number" min="1" max="1000" value="50" style="width:72px"></label>
+    <span id="models"></span>
+    <button id="start">Start</button>
+    <span class="legend"><span><i style="background:var(--ok)"></i>correct</span>
+      <span><i style="background:var(--bad)"></i>incorrect / error</span></span>
+  </div>
+  <div id="msg"></div>
+  <div id="rows"></div>
+  <div id="summary"></div>
+</main>
+<script src="/static/common.js"></script>
+<script>
+
+async function init() {
+  const [ds, ms] = await Promise.all([fetch("/api/datasets").then(r => r.json()), loadModels()]);
+  $("dataset").innerHTML = ds.map(d => `<option value="${d.name}">${d.name} (${d.cases})</option>`).join("");
+  $("models").innerHTML = ms.map(m => `<label><input type="checkbox" value="${m.name}" ${m.available ? "checked" : ""}>
+      ${m.label}${m.available ? "" : ` <span class="na">${m.hint}</span>`}</label>`).join(" ");
+  if (!ds.length) $("msg").textContent = "No datasets found. Run: uv run python scripts/fetch_datasets.py";
+}
+
+async function start() {
+  try { await run(); } catch (e) { $("msg").textContent = "Error: " + e.message; $("start").disabled = false; }
+}
+
+async function run() {
+  const models = [...document.querySelectorAll("#models input:checked")].map(i => i.value);
+  if (!models.length) { $("msg").textContent = "Select at least one model."; return; }
+  $("msg").textContent = ""; $("summary").innerHTML = ""; $("start").disabled = true;
+  const res = await fetch("/api/runs", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ dataset: $("dataset").value, models, limit: +$("limit").value }) });
+  if (!res.ok) { $("msg").textContent = (await res.json()).detail; $("start").disabled = false; return; }
+  const run = await res.json();
+  const sq = {}, stats = {};
+  $("rows").innerHTML = models.map(m => `<div class="row"><h2><span>${label(m)}</span><span id="acc-${m}" class="na">waiting</span></h2>
+      <div class="grid">${run.cases.map(c => `<div class="sq" id="sq-${m}-${c.id}" title="${esc(c.query)}"></div>`).join("")}</div></div>`).join("");
+  const es = new EventSource(`/api/runs/${run.run_id}/events`);
+  es.onmessage = e => {
+    const ev = JSON.parse(e.data);
+    if (ev.type === "model_start") { stats[ev.model] = { n: 0, ok: 0 }; $(`acc-${ev.model}`).textContent = "running…"; }
+    if (ev.type === "model_warning") $("msg").textContent = `${ev.model}: ${ev.message}`;
+    if (ev.type === "result") {
+      const s = stats[ev.model]; s.n++; s.ok += ev.correct;
+      const el = $(`sq-${ev.model}-${ev.case_id}`);
+      el.className = "sq " + (ev.correct ? "ok" : "bad");
+      el.title = `${el.title}\nexpected: ${ev.expected}\npredicted: ${ev.predicted ?? "-"}\n${fmt(ev.latency_ms)}${ev.error ? "\n" + ev.error : ""}`;
+      $(`acc-${ev.model}`).textContent = `${s.ok}/${s.n} correct`;
+    }
+    if (ev.type === "done") { es.close(); $("start").disabled = false; showSummary(ev.summaries); }
+  };
+  es.onerror = () => { es.close(); $("start").disabled = false; };
+}
+
+function showSummary(rows) {
+  const items = value => rows.map(r => ({ label: label(r.model), value: value(r), color: color(r.model) }));
+  $("summary").innerHTML = `<table><tr><th>Model</th><th>Accuracy</th><th>Avg latency / case</th><th>Total latency</th>${ordinalHead(rows)}</tr>` +
+    rows.map(r => `<tr><td>${label(r.model)}</td><td>${(r.accuracy * 100).toFixed(1)}% (${r.correct}/${r.cases})</td>
+      <td>${fmt(r.avg_latency_ms)}</td><td>${fmt(r.total_latency_ms)}</td>${ordinalCells(r, rows)}</tr>`).join("") + `</table>` +
+    `<div class="charts">` +
+    chart("Accuracy", items(r => r.accuracy * 100), v => v.toFixed(1) + "%", 100) +
+    chart("Average latency per case", items(r => r.avg_latency_ms), fmt) +
+    chart("Total latency", items(r => r.total_latency_ms), fmt) + `</div>`;
+}
+
+$("start").onclick = start;
+init();
+</script>
+</body>
+</html>

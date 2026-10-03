@@ -1,0 +1,93 @@
+custom benchmark finished; GPU: 229 MiB
+AC power confirmed; starting harness runs
+##### strands-decider
+gpu before runs (temp,clock,thermal-throttle): 60,210MHz,NotActive
+server up: {"status":"ok","model":"strands-decider","checkpoint":"StrandsAgents/strands-decider-2B-hobson-v19","base_model":"Qwen/Qwen3.5-2B-Base","num_slots":24,"max_length":4096,"temperature":0.9627721607677362,"device":"cuda","prefix_cache":true}
+benchmark: 40 rows | backend=jev model=strands-decider
+RESULTS  n=40  overall exact-accuracy = 60.0%
+WALL_SECONDS 3.4
+== strands-decider run 1 start | gpu(temp,clock,throttle): 67,1500MHz,NotActive
+== strands-decider run 1 done: RESULTS  n=2934  overall exact-accuracy = 66.7% | WALL_SECONDS 306.9
+== strands-decider run 2 start | gpu(temp,clock,throttle): 80,1335MHz,Active
+== strands-decider run 2 done: RESULTS  n=2934  overall exact-accuracy = 66.7% | WALL_SECONDS 317.7
+== strands-decider run 3 start | gpu(temp,clock,throttle): 80,1410MHz,Active
+== strands-decider run 3 done: RESULTS  n=2934  overall exact-accuracy = 66.7% | WALL_SECONDS 368.2
+== strands-decider stopped after 3 runs (as requested)
+GPU after Strands: 229 MiB
+AC power confirmed; starting harness runs
+##### laya-english
+##### TIMED RERUN (per-request timings, 3 runs each)
+custom benchmark finished; GPU: 229 MiB
+AC power confirmed; starting harness runs
+##### strands-decider
+gpu before runs (temp,clock,thermal-throttle): 60,210MHz,NotActive
+server up: {"status":"ok","model":"strands-decider","checkpoint":"StrandsAgents/strands-decider-2B-hobson-v19","base_model":"Qwen/Qwen3.5-2B-Base","num_slots":24,"max_length":4096,"temperature":0.9627721607677362,"device":"cuda","prefix_cache":true}
+benchmark: 40 rows | backend=jev model=strands-decider
+RESULTS  n=40  overall exact-accuracy = 60.0%
+WALL_SECONDS 3.5
+wrote 40 per-request timings to /tmp/claude-1000/-home-deep-Documents-Moveai-Engineering-repos-decision-benchmark/ed45c331-03b2-4ddd-b52f-adeff870c577/scratchpad/harness_timed/strands-decider_smoke.timing.json
+== strands-decider run 1 start | gpu(temp,clock,throttle): 68,1500MHz,NotActive
+== strands-decider run 1 done: RESULTS  n=2934  overall exact-accuracy = 66.7% | WALL_SECONDS 316.0
+== strands-decider run 2 start | gpu(temp,clock,throttle): 80,1335MHz,Active
+== strands-decider run 2 done: RESULTS  n=2934  overall exact-accuracy = 66.7% | WALL_SECONDS 338.9
+== strands-decider run 3 start | gpu(temp,clock,throttle): 79,1305MHz,Active
+== strands-decider run 3 done: RESULTS  n=2934  overall exact-accuracy = 66.7% | WALL_SECONDS 344.2
+##### laya-english
+gpu before runs (temp,clock,thermal-throttle): 60,210MHz,NotActive
+server up: {"status":"ok","loaded":["english"],"revisions":{"english":"55cf4c4ebb4ebe31b2550e8bdf3bd21b99753851"},"device":"cuda","device_is_preference":false,"checkpoint_devices":{"english":"cuda"},"cpu_fallbacks":{"english":{"count":0,"last_reason":null}}}
+benchmark: 40 rows | backend=jev model=laya-english
+RESULTS  n=40  overall exact-accuracy = 52.5%
+WALL_SECONDS 2.0
+wrote 40 per-request timings to /tmp/claude-1000/-home-deep-Documents-Moveai-Engineering-repos-decision-benchmark/ed45c331-03b2-4ddd-b52f-adeff870c577/scratchpad/harness_timed/laya-english_smoke.timing.json
+== laya-english run 1 start | gpu(temp,clock,throttle): 67,1695MHz,NotActive
+== laya-english run 1 done: RESULTS  n=2934  overall exact-accuracy = 45.8% | WALL_SECONDS 81.7
+== laya-english run 2 start | gpu(temp,clock,throttle): 80,1545MHz,Active
+== laya-english run 2 done: RESULTS  n=2934  overall exact-accuracy = 45.8% | WALL_SECONDS 86.0
+== laya-english run 3 start | gpu(temp,clock,throttle): 79,1395MHz,Active
+== laya-english run 3 done: RESULTS  n=2934  overall exact-accuracy = 45.8% | WALL_SECONDS 88.9
+##### laya-typed
+gpu before runs (temp,clock,thermal-throttle): 60,210MHz,NotActive
+server up: {"status":"ok","loaded":["typed-decisions"],"revisions":{"typed-decisions":"55cf4c4ebb4ebe31b2550e8bdf3bd21b99753851"},"device":"cuda","device_is_preference":false,"checkpoint_devices":{"typed-decisions":"cuda"},"cpu_fallbacks":{"typed-decisions":{"count":0,"last_reason":null}}}
+benchmark: 40 rows | backend=jev model=laya-typed
+RESULTS  n=40  overall exact-accuracy = 55.0%
+WALL_SECONDS 2.4
+wrote 40 per-request timings to /tmp/claude-1000/-home-deep-Documents-Moveai-Engineering-repos-decision-benchmark/ed45c331-03b2-4ddd-b52f-adeff870c577/scratchpad/harness_timed/laya-typed_smoke.timing.json
+== laya-typed run 1 start | gpu(temp,clock,throttle): 66,1650MHz,NotActive
+== laya-typed run 1 done: RESULTS  n=2934  overall exact-accuracy = 46.0% | WALL_SECONDS 78.8
+== laya-typed run 2 start | gpu(temp,clock,throttle): 79,1455MHz,Active
+##### LAYA RE-RUN with explicit checkpoint in the request model field (3 timed runs each)
+custom benchmark finished; GPU: 229 MiB
+AC power confirmed; starting harness runs
+##### laya-en-explicit (request model field: english)
+gpu before runs (temp,clock,thermal-throttle): 60,210MHz,NotActive
+server up: {"status":"ok","loaded":["english"],"revisions":{"english":"55cf4c4ebb4ebe31b2550e8bdf3bd21b99753851"},"device":"cuda","device_is_preference":false,"checkpoint_devices":{"english":"cuda"},"cpu_fallbacks":{"english":{"count":0,"last_reason":null}}}
+probe: requested model = english | server answered with model = laya-rl-agent
+benchmark: 40 rows | backend=jev model=english
+RESULTS  n=40  overall exact-accuracy = 52.5%
+WALL_SECONDS 1.0
+wrote 40 per-request timings to /tmp/claude-1000/-home-deep-Documents-Moveai-Engineering-repos-decision-benchmark/ed45c331-03b2-4ddd-b52f-adeff870c577/scratchpad/harness_timed/laya-en-explicit_smoke.timing.json
+== laya-en-explicit run 1 start | gpu(temp,clock,throttle): 66,1665MHz,NotActive
+grep: /tmp/claude-1000/-home-deep-Documents-Moveai-Engineering-repos-decision-benchmark/ed45c331-03b2-4ddd-b52f-adeff870c577/scratchpad/harness_timed/english_run1.txt: No such file or directory
+grep: /tmp/claude-1000/-home-deep-Documents-Moveai-Engineering-repos-decision-benchmark/ed45c331-03b2-4ddd-b52f-adeff870c577/scratchpad/harness_timed/english_run1.txt: No such file or directory
+== english run 1 done:  | 
+== english run 2 start | gpu(temp,clock,throttle): 80,1590MHz,Active
+== english run 2 done: RESULTS  n=2934  overall exact-accuracy = 45.8% | WALL_SECONDS 79.7
+== english run 3 start | gpu(temp,clock,throttle): 80,1650MHz,Active
+== english run 3 done: RESULTS  n=2934  overall exact-accuracy = 45.8% | WALL_SECONDS 81.4
+##### laya-td-explicit (request model field: typed-decisions)
+gpu before runs (temp,clock,thermal-throttle): 60,210MHz,NotActive
+server up: {"status":"ok","loaded":["typed-decisions"],"revisions":{"typed-decisions":"55cf4c4ebb4ebe31b2550e8bdf3bd21b99753851"},"device":"cuda","device_is_preference":false,"checkpoint_devices":{"typed-decisions":"cuda"},"cpu_fallbacks":{"typed-decisions":{"count":0,"last_reason":null}}}
+probe: requested model = typed-decisions | server answered with model = laya-rl-agent
+benchmark: 40 rows | backend=jev model=typed-decisions
+RESULTS  n=40  overall exact-accuracy = 65.0%
+WALL_SECONDS 1.0
+wrote 40 per-request timings to /tmp/claude-1000/-home-deep-Documents-Moveai-Engineering-repos-decision-benchmark/ed45c331-03b2-4ddd-b52f-adeff870c577/scratchpad/harness_timed/laya-td-explicit_smoke.timing.json
+== laya-td-explicit run 1 start | gpu(temp,clock,throttle): 66,1680MHz,NotActive
+grep: /tmp/claude-1000/-home-deep-Documents-Moveai-Engineering-repos-decision-benchmark/ed45c331-03b2-4ddd-b52f-adeff870c577/scratchpad/harness_timed/typed-decisions_run1.txt: No such file or directory
+grep: /tmp/claude-1000/-home-deep-Documents-Moveai-Engineering-repos-decision-benchmark/ed45c331-03b2-4ddd-b52f-adeff870c577/scratchpad/harness_timed/typed-decisions_run1.txt: No such file or directory
+== typed-decisions run 1 done:  | 
+== typed-decisions run 2 start | gpu(temp,clock,throttle): 80,1665MHz,Active
+== typed-decisions run 2 done: RESULTS  n=2934  overall exact-accuracy = 63.3% | WALL_SECONDS 80.0
+== typed-decisions run 3 start | gpu(temp,clock,throttle): 80,1455MHz,Active
+== typed-decisions run 3 done: RESULTS  n=2934  overall exact-accuracy = 63.3% | WALL_SECONDS 81.7
+ALL HARNESS RUNS DONE

@@ -1,0 +1,89 @@
+benchmark: 2934 rows | backend=jev model=strands-decider
+  ...50/2934
+  ...100/2934
+  ...150/2934
+  ...200/2934
+  ...250/2934
+  ...300/2934
+  ...350/2934
+  ...400/2934
+  ...450/2934
+  ...500/2934
+  ...550/2934
+  ...600/2934
+  ...650/2934
+  ...700/2934
+  ...750/2934
+  ...800/2934
+  ...850/2934
+  ...900/2934
+  ...950/2934
+  ...1000/2934
+  ...1050/2934
+  ...1100/2934
+  ...1150/2934
+  ...1200/2934
+  ...1250/2934
+  ...1300/2934
+  ...1350/2934
+  ...1400/2934
+  ...1450/2934
+  ...1500/2934
+  ...1550/2934
+  ...1600/2934
+  ...1650/2934
+  ...1700/2934
+  ...1750/2934
+  ...1800/2934
+  ...1850/2934
+  ...1900/2934
+  ...1950/2934
+  ...2000/2934
+  ...2050/2934
+  ...2100/2934
+  ...2150/2934
+  ...2200/2934
+  ...2250/2934
+  ...2300/2934
+  ...2350/2934
+  ...2400/2934
+  ...2450/2934
+  ...2500/2934
+  ...2550/2934
+  ...2600/2934
+  ...2650/2934
+  ...2700/2934
+  ...2750/2934
+  ...2800/2934
+  ...2850/2934
+  ...2900/2934
+
+================================================================
+RESULTS  n=2934  overall exact-accuracy = 66.7%
+  [exact metric]   n=2206  accuracy=71.7%
+  [ordinal metric] n= 728  QWK=0.551  MAE=0.66  exact=51.5%
+  by type:
+    type=choice         n=1157 acc=77.1%
+    type=noul           n= 949 acc=68.1%
+    type=score          n= 828 acc=50.5%
+  by tier:
+    reliability=gold           n=1682 acc=71.9%
+    reliability=silver         n=1252 acc=59.6%
+  by domain:
+    domain=agent_trace_observability n= 384 acc=51.6%
+    domain=banking        n= 300 acc=88.7%
+    domain=commerce       n= 100 acc=93.0%
+    domain=customer_service n= 417 acc=69.1%
+    domain=invoice_processing n= 449 acc=64.8%
+    domain=invoices       n= 100 acc=52.0%
+    domain=logic          n= 100 acc=37.0%
+    domain=moderation     n= 100 acc=43.0%
+    domain=observability  n= 100 acc=100.0%
+    domain=org            n= 100 acc=54.0%
+    domain=quant          n= 100 acc=69.0%
+    domain=reviews        n= 100 acc=60.0%
+    domain=security_incidents n= 484 acc=63.0%
+    domain=support        n= 100 acc=100.0%
+
+wrote per-example predictions to /tmp/claude-1000/-home-deep-Documents-Moveai-Engineering-repos-decision-benchmark/ed45c331-03b2-4ddd-b52f-adeff870c577/scratchpad/harness_out/strands-decider_run1.json
+WALL_SECONDS 306.9

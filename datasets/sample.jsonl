@@ -1,0 +1,3 @@
+{"id":"s1","query":"My card hasn't arrived yet","options":["card_arrival","lost_card","refund"],"expected":"card_arrival"}
+{"id":"s2","query":"I think I lost my card","options":["card_arrival","lost_card","refund"],"expected":"lost_card"}
+{"id":"s3","query":"I want my money back","options":["card_arrival","lost_card","refund"],"expected":"refund"}

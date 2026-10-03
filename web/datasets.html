@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compare datasets</title>
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<main>
+  <h1>Decision Benchmark</h1>
+  <nav><a href="/">Compare models</a><a class="here" href="/datasets">Compare datasets</a></nav>
+  <div class="bar">
+    <label>Model <select id="model"></select></label>
+    <label>Cases per dataset <input id="limit" type="number" min="1" max="1000" value="50" style="width:72px"></label>
+    <button id="start">Start</button>
+    <span class="legend"><span><i style="background:var(--ok)"></i>correct</span>
+      <span><i style="background:var(--bad)"></i>incorrect / error</span></span>
+    <div class="picks" id="datasets" style="flex-basis:100%"></div>
+  </div>
+  <div id="msg"></div>
+  <div id="rows"></div>
+  <div id="summary"></div>
+</main>
+<script src="/static/common.js"></script>
+<script>
+async function init() {
+  const [ds, ms] = await Promise.all([fetch("/api/datasets").then(r => r.json()), loadModels()]);
+  $("model").innerHTML = ms.map(m => `<option value="${esc(m.name)}" ${m.available ? "" : "disabled"}>${esc(m.label)}${m.available ? "" : " (" + esc(m.hint) + ")"}</option>`).join("");
+  const firstAvailable = ms.find(m => m.available);
+  if (firstAvailable) $("model").value = firstAvailable.name;
+  $("datasets").innerHTML = ds.map(d => `<label><input type="checkbox" value="${esc(d.name)}" ${d.name === "sample" ? "" : "checked"}>
+      ${esc(d.name)} <span class="na">(${d.cases})</span></label>`).join("");
+  if (!ds.length) $("msg").textContent = "No datasets found. Run: uv run python scripts/fetch_datasets.py";
+}
+
+async function start() {
+  try { await run(); } catch (e) { $("msg").textContent = "Error: " + e.message; $("start").disabled = false; }
+}
+
+async function run() {
+  const model = $("model").value;
+  const datasets = [...document.querySelectorAll("#datasets input:checked")].map(i => i.value);
+  if (!datasets.length) { $("msg").textContent = "Select at least one dataset."; return; }
+  $("msg").textContent = ""; $("summary").innerHTML = ""; $("start").disabled = true;
+  const res = await fetch("/api/dataset-runs", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model, datasets, limit: +$("limit").value }) });
+  if (!res.ok) { $("msg").textContent = (await res.json()).detail; $("start").disabled = false; return; }
+  const run = await res.json();
+
+  const els = {}, stats = {}, status = {};
+  $("rows").innerHTML = "";
+  run.datasets.forEach((d, di) => {
+    $("rows").insertAdjacentHTML("beforeend", `<div class="row"><h2><span>${esc(d.name)} <small class="na">${d.cases.length} cases</small></span>
+        <span id="acc-${di}" class="na">waiting</span></h2><div class="grid" id="grid-${di}"></div></div>`);
+    els[d.name] = {};
+    status[d.name] = $(`acc-${di}`);
+    stats[d.name] = { n: 0, ok: 0 };
+    d.cases.forEach(c => {
+      const sq = document.createElement("div");
+      sq.className = "sq"; sq.title = c.query;  // textContent-safe: set as a property, not HTML
+      $(`grid-${di}`).appendChild(sq);
+      els[d.name][c.id] = sq;
+    });
+  });
+
+  const es = new EventSource(`/api/dataset-runs/${run.run_id}/events`);
+  es.onmessage = e => {
+    const ev = JSON.parse(e.data);
+    if (ev.type === "model_warning") $("msg").textContent = `${label(ev.model)}: ${ev.message}`;
+    if (ev.type === "dataset_start") status[ev.dataset].textContent = "running…";
+    if (ev.type === "result") {
+      const s = stats[ev.dataset]; s.n++; s.ok += ev.correct;
+      const el = els[ev.dataset][ev.case_id];
+      el.className = "sq " + (ev.correct ? "ok" : "bad");
+      el.title += `\nexpected: ${ev.expected}\npredicted: ${ev.predicted ?? "-"}\n${fmt(ev.latency_ms)}${ev.error ? "\n" + ev.error : ""}`;
+      status[ev.dataset].textContent = `${s.ok}/${s.n} correct`;
+    }
+    if (ev.type === "done") { es.close(); $("start").disabled = false; showSummary(model, ev.summaries); }
+  };
+  es.onerror = () => { es.close(); $("start").disabled = false; };
+}
+
+function showSummary(model, rows) {
+  const items = value => rows.map(r => ({ label: r.dataset, value: value(r), color: color(model) }));
+  const all = rows.reduce((a, r) => ({ n: a.n + r.cases, ok: a.ok + r.correct, ms: a.ms + r.total_latency_ms }), { n: 0, ok: 0, ms: 0 });
+  $("summary").innerHTML = `<table><tr><th>${esc(label(model))}</th><th>Cases</th><th>Accuracy</th><th>Avg latency / case</th><th>Total latency</th>${ordinalHead(rows)}</tr>` +
+    rows.map(r => `<tr><td>${esc(r.dataset)}</td><td>${r.cases}</td><td>${(r.accuracy * 100).toFixed(1)}% (${r.correct}/${r.cases})</td>
+      <td>${fmt(r.avg_latency_ms)}</td><td>${fmt(r.total_latency_ms)}</td>${ordinalCells(r, rows)}</tr>`).join("") +
+    `<tr><td><b>All datasets</b></td><td>${all.n}</td><td>${all.n ? (all.ok / all.n * 100).toFixed(1) : "0.0"}% (${all.ok}/${all.n})</td>
+      <td>${all.n ? fmt(all.ms / all.n) : "-"}</td><td>${fmt(all.ms)}</td>${hasOrdinal(rows) ? "<td></td><td></td>" : ""}</tr></table>` +
+    `<div class="charts">` +
+    chart("Accuracy by dataset", items(r => r.accuracy * 100), v => v.toFixed(1) + "%", 100) +
+    chart("Average latency per case", items(r => r.avg_latency_ms), fmt) +
+    chart("Total latency", items(r => r.total_latency_ms), fmt) + `</div>`;
+}
+
+$("start").onclick = start;
+init();
+</script>
+</body>
+</html>

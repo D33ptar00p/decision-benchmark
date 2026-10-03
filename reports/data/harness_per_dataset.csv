@@ -1,0 +1,23 @@
+dataset,type,cases,Strands Decider 2B accuracy_pct,Strands Decider 2B avg_latency_ms,Strands Decider 2B total_s,Laya English accuracy_pct,Laya English avg_latency_ms,Laya English total_s,Laya typed-decisions accuracy_pct,Laya typed-decisions avg_latency_ms,Laya typed-decisions total_s
+agent_trace_observability,choice,156,58.97,73.0,11.39,46.79,24.0,3.75,61.54,23.9,3.73
+banking,choice,300,88.67,287.9,86.36,38.67,35.3,10.60,37.33,35.2,10.55
+commerce,choice,100,93.00,54.8,5.48,28.00,16.1,1.61,26.00,16.0,1.60
+customer_service,choice,137,74.45,129.6,17.76,32.12,34.4,4.72,89.78,34.8,4.77
+invoice_processing,choice,65,63.08,143.1,9.30,61.54,34.0,2.21,95.38,33.8,2.20
+org,choice,100,54.00,55.5,5.55,10.00,16.1,1.61,24.00,16.0,1.60
+reviews,choice,100,60.00,47.9,4.79,81.00,15.9,1.59,60.00,15.8,1.58
+security_incidents,choice,99,84.85,113.5,11.23,3.03,33.4,3.31,76.77,33.0,3.26
+support,choice,100,100.00,48.7,4.87,100.00,15.9,1.59,100.00,16.0,1.60
+agent_trace_observability,yes/no,60,56.67,65.8,3.95,18.33,22.4,1.35,41.67,22.7,1.36
+customer_service,yes/no,96,77.08,120.9,11.61,84.38,31.9,3.06,55.21,31.9,3.06
+invoice_processing,yes/no,200,80.50,133.6,26.72,38.00,32.8,6.56,95.50,32.7,6.55
+invoices,yes/no,100,52.00,53.7,5.37,48.00,17.5,1.75,51.00,17.5,1.75
+logic,yes/no,100,37.00,49.8,4.98,59.00,16.1,1.61,59.00,16.2,1.62
+observability,yes/no,100,100.00,49.4,4.94,100.00,15.9,1.59,100.00,15.8,1.58
+quant,yes/no,100,69.00,50.3,5.03,62.00,16.0,1.60,65.00,15.9,1.59
+security_incidents,yes/no,193,61.66,110.6,21.35,53.89,29.8,5.75,53.37,29.5,5.69
+agent_trace_observability,score,168,42.86,79.0,13.27,50.00,24.1,4.04,69.64,24.4,4.09
+customer_service,score,184,60.87,129.3,23.79,25.54,33.8,6.21,66.85,34.0,6.25
+invoice_processing,score,184,48.37,148.3,27.29,42.93,33.7,6.19,61.41,33.6,6.19
+moderation,score,100,43.00,49.7,4.97,70.00,15.8,1.58,46.00,15.9,1.59
+security_incidents,score,192,53.12,119.0,22.85,14.58,32.9,6.31,69.27,33.2,6.37
